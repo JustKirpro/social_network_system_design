@@ -1,0 +1,471 @@
+openapi: 3.0.0
+
+info:
+  title: Travel Social Network API
+  description: REST API for a social network for travelers
+  version: 1.0.0
+
+tags:
+  - name: Media
+  - name: Posts
+  - name: Comments
+  - name: Reactions
+  - name: Follows
+  - name: Feed
+  - name: Places
+
+paths:
+  /media/presigned-url:
+    post:
+      summary: Get presigned URL for photo upload
+      description: Returns presigned URL for direct photo upload to object storage
+      tags:
+        - Media
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePresignedUrlRequest'
+            examples:
+              request:
+                value:
+                  file_name: "spb-sunset.jpg"
+                  content_type: "image/jpeg"
+      responses:
+        '200':
+          description: Presigned URL generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignedUrlResponse'
+              examples:
+                response:
+                  value:
+                    photo_key: "posts/tmp/7f3f5f3c/spb-sunset.jpg"
+                    upload_url: "https://storage.example.com/presigned-upload-url"
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+
+  /posts:
+    post:
+      summary: Create post
+      description: Create a travel post with description, place and uploaded photos
+      tags:
+        - Posts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePostRequest'
+            examples:
+              request:
+                value:
+                  place_id: "place_123"
+                  description: "Очень красивый закат и потрясающий вид на город"
+                  photo_keys:
+                    - "posts/tmp/7f3f5f3c/spb-sunset.jpg"
+                    - "posts/tmp/7f3f5f3c/spb-river.jpg"
+      responses:
+        '201':
+          description: Post created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+
+  /posts/{postId}/comments:
+    get:
+      summary: Get comments for post
+      description: Returns paginated comments for a post
+      tags:
+        - Comments
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Comments returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentListResponse'
+        '404':
+          description: Post not found
+        '500':
+          description: Server error
+
+    post:
+      summary: Add comment to post
+      description: Creates a comment for a post
+      tags:
+        - Comments
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+            examples:
+              request:
+                value:
+                  text: "Очень красивое место, тоже хочу туда поехать"
+      responses:
+        '201':
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Post not found
+        '500':
+          description: Server error
+
+  /posts/{postId}/reactions:
+    post:
+      summary: Add reaction to post
+      description: Adds reaction to a post
+      tags:
+        - Reactions
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+      responses:
+        '201':
+          description: Reaction created
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Post not found
+        '409':
+          description: Reaction already exists
+        '500':
+          description: Server error
+
+  /users/{userId}/follow:
+    post:
+      summary: Follow user
+      description: Subscribe to another traveler
+      tags:
+        - Follows
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '201':
+          description: Follow created
+        '401':
+          description: Unauthorized
+        '404':
+          description: User not found
+        '409':
+          description: Already followed
+        '500':
+          description: Server error
+
+  /feed:
+    get:
+      summary: Get personalized feed
+      description: Returns user feed based on subscriptions in reverse chronological order
+      tags:
+        - Feed
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Number of posts in response
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          description: Cursor for pagination
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Feed returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedResponse'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+
+  /places/by-name:
+    get:
+      summary: Get place by name
+      description: Returns one place by its name
+      tags:
+        - Places
+      parameters:
+        - name: name
+          in: query
+          required: true
+          description: Place name
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Place returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Place'
+        '404':
+          description: Place not found
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+
+  /places/{placeId}/posts:
+    get:
+      summary: Get posts by place
+      description: Returns posts related to a specific place
+      tags:
+        - Places
+      parameters:
+        - $ref: '#/components/parameters/PlaceId'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Posts returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostListResponse'
+        '404':
+          description: Place not found
+        '500':
+          description: Server error
+
+components:
+  parameters:
+    PostId:
+      name: postId
+      in: path
+      required: true
+      description: Post identifier
+      schema:
+        type: string
+
+    UserId:
+      name: userId
+      in: path
+      required: true
+      description: User identifier
+      schema:
+        type: string
+
+    PlaceId:
+      name: placeId
+      in: path
+      required: true
+      description: Place identifier
+      schema:
+        type: string
+
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Number of items in response
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+
+    Offset:
+      name: offset
+      in: query
+      required: false
+      description: Offset for pagination
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+
+  schemas:
+    CreatePresignedUrlRequest:
+      type: object
+      properties:
+        file_name:
+          type: string
+        content_type:
+          type: string
+      required:
+        - file_name
+        - content_type
+
+    PresignedUrlResponse:
+      type: object
+      properties:
+        photo_key:
+          type: string
+          description: Storage key for uploaded photo
+        upload_url:
+          type: string
+          format: uri
+          description: Presigned URL for direct upload
+      required:
+        - photo_key
+        - upload_url
+
+    CreatePostRequest:
+      type: object
+      properties:
+        place_id:
+          type: string
+        description:
+          type: string
+          maxLength: 2000
+        photo_keys:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+      required:
+        - place_id
+        - description
+        - photo_keys
+
+    Post:
+      type: object
+      properties:
+        id:
+          type: string
+        author_id:
+          type: string
+        place_id:
+          type: string
+        description:
+          type: string
+        photos:
+          type: array
+          description: CDN URLs for post photos
+          items:
+            type: string
+            format: uri
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - author_id
+        - place_id
+        - description
+        - photos
+        - created_at
+
+    PostListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+        limit:
+          type: integer
+        offset:
+          type: integer
+      required:
+        - items
+        - limit
+        - offset
+
+    CreateCommentRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          maxLength: 2000
+      required:
+        - text
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: string
+        post_id:
+          type: string
+        author_id:
+          type: string
+        text:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - post_id
+        - author_id
+        - text
+        - created_at
+
+    CommentListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+        limit:
+          type: integer
+        offset:
+          type: integer
+      required:
+        - items
+        - limit
+        - offset
+
+    FeedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+        - items
+
+    Place:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - name
