@@ -51,6 +51,7 @@
  * user_id - 8 B;
  * place_id - 8 B;
  * description - 800 B (400 как среднее количество символов в посте * 2 байта на символ в среднем);
+ * reactions_count - 4 B;
  * created_at - 8 B;
 
 Фото ≈ 128 B:
@@ -58,6 +59,7 @@
  * post_id - 8 B;
  * url - 100 B;
  * order - 4 B;
+ * created_at - 8 B; 
 
 Комментарий ≈ 128 B:
 * id - 8 B;
@@ -114,4 +116,45 @@
 ##### Чтение:
 * Открытие ленты = 579 RPS * 1 MB * 3 * 20 ≈ 34 GB/s;
 
-Это трафик с учётом возвращения полноразмерных фотографий, предположим, что средний размер фотографии, возвращаемой пользователю при просмотре ленты ≈ 300 KB, тогда трафик снижается до ≈ 10 GB/s;
+Это трафик с учётом возвращения полноразмерных фотографий, предположим, что средний размер фотографии, возвращаемой пользователю при просмотре ленты ≈ 300 KB, тогда трафик снижается до ≈ 10 GB/s.
+
+### Хранение данных:
+#### Метаданные:
+* Capacity = 69 KB/s * 86 400 * 365 ≈ 3 TB;
+
+##### HDD (Capacity 2 TB, Throughput 100 MB/s, IOPS 100):
+* Дисков для Capacity = 3 TB / 2 TB = 2;
+* Дисков для Throughput = 90 KB/s / 100 MB/s = 1;
+* Дисков для IOPS = 2500 RPS / 100 = 25;
+
+##### SSD SATA (Capacity 2 TB, Throughput 500 MB/s, IOPS 1000):
+* Дисков для Capacity = 3 TB / 2 TB = 2;
+* Дисков для Throughput = 90 KB/s / 500 MB/s = 1;
+* Дисков для IOPS = 2500 RPS / 1000 = 3;
+
+##### SSD NVMe (Capacity 4 TB, Throughput 3 GB/s, IOPS 10000):
+* Дисков для Capacity = 3 TB / 4 TB = 1;
+* Дисков для Throughput = 90 KB/s / 3 GB/s = 1;
+* Дисков для IOPS = 2500 RPS / 10000 = 1;
+
+**Итог**: для хранения метаданных можно использовать 25 HDD, 3 SSD SATA или 1 SSD NVMe.
+
+#### Медиа:
+* Capacity = 51 MB/s * 86 400 * 365 ≈ 1600 TB;
+
+##### HDD (Capacity 8 TB, Throughput 100 MB/s, IOPS 100):
+* Дисков для Capacity = 1600 TB / 8 TB = 200;
+* Дисков для Throughput = 10 GB/s / 100 MB/s = 100;
+* Дисков для IOPS = 2500 RPS / 100 = 25;
+
+##### SSD SATA (Capacity 32 TB, Throughput 500 MB/s, IOPS 1000):
+* Дисков для Capacity = 1600 TB / 32 TB = 50;
+* Дисков для Throughput = 10 GB/s / 500 MB/s = 20;
+* Дисков для IOPS = 2500 RPS / 1000 = 3;
+
+##### SSD NVMe (Capacity 64 TB, Throughput 3 GB/s, IOPS 10000):
+* Дисков для Capacity = 1600 TB / 64 TB = 25;
+* Дисков для Throughput = 10 GB/s / 3 GB/s = 4;
+* Дисков для IOPS = 2500 RPS / 10000 = 1;
+
+**Итог**: для хранения медиа можно использовать 200 HDD, 50 SSD SATA или 25 SSD NVMe.
