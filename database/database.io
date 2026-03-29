@@ -6,7 +6,9 @@ Table users {
 
 Table places {
   id bigint [pk]
-  name text [not null]
+  name text
+  latitude double [not null]
+  longitude double [not null]
 }
 
 Table posts {
